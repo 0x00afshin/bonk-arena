@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balls.fun - The BONK-Powered Arcade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+        }
+        .bonk-gradient-text {
+            background: linear-gradient(90deg, #f9a825, #ff5722);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .bonk-bg-gradient {
+            background: linear-gradient(135deg, #1e1b3a 0%, #4a148c 100%);
+        }
+        .bonk-button-primary {
+            background: linear-gradient(90deg, #f9a825, #ff5722);
+            color: #ffffff;
+            font-weight: 700;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 20px rgba(249, 168, 37, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+        .bonk-button-primary:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 7px 25px rgba(249, 168, 37, 0.5);
+        }
+        .bonk-button-primary::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0) 100%);
+            transform: rotate(30deg);
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        .bonk-button-primary:hover::after {
+            opacity: 1;
+            animation: shine 1s forwards;
+        }
+        @keyframes shine {
+            0% { transform: translateX(-100%) rotate(30deg); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateX(100%) rotate(30deg); opacity: 0; }
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .bonk-dog-logo {
+            width: 32px;
+            height: 32px;
+            margin-right: 10px;
+        }
+        
+        .how-it-works-step {
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .how-it-works-step:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 0 30px rgba(249, 168, 37, 0.2);
+        }
+
+        /* Scroll Animations */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Canvas for background particles */
+        #particle-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        .content-on-top {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* FAQ Accordion Styles */
+        .faq-item details {
+            transition: background-color 0.3s;
+        }
+        .faq-item details summary {
+            list-style: none;
+            cursor: pointer;
+        }
+        .faq-item details summary::-webkit-details-marker {
+            display: none;
+        }
+        .faq-item details summary .faq-arrow {
+            transition: transform 0.3s;
+        }
+        .faq-item details[open] summary .faq-arrow {
+            transform: rotate(90deg);
+        }
+        .faq-item details[open] {
+             background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* NEW Vertical Roadmap Styles */
+        .roadmap-item {
+            opacity: 0.5;
+            transform: scale(0.95);
+            transition: opacity 0.4s, transform 0.4s;
+        }
+        .roadmap-item.is-active {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .roadmap-item-dot {
+            transition: background-color 0.4s, box-shadow 0.4s;
+        }
+        .roadmap-item.is-active .roadmap-item-dot {
+            background-color: #f9a825;
+            box-shadow: 0 0 15px #f9a825;
+        }
+        .roadmap-line {
+            height: 100%;
+            width: 2px;
+            background-color: rgba(255, 255, 255, 0.2);
+            position: absolute;
+            left: calc(50% - 1px);
+            top: 0;
+        }
+        .roadmap-progress {
+            width: 2px;
+            background-color: #f9a825;
+            position: absolute;
+            left: calc(50% - 1px);
+            top: 0;
+            transition: height 0.2s ease-out;
+        }
+
+    </style>
+</head>
+<body class="overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 py-4 px-6 md:px-12">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center">
+                <img src="https://www.bonkcoin.com/assets/images/bonk-logo-2.png" alt="BONK Logo" class="bonk-dog-logo">
+                <h1 class="text-xl font-bold text-white">Balls.<span class="text-[#f9a825]">fun</span></h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                 <a href="https://twitter.com" target="_blank" class="text-gray-400 hover:text-white transition transform hover:scale-110">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
+                </a>
+                <a href="https://telegram.org" target="_blank" class="text-gray-400 hover:text-white transition transform hover:scale-110">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="m20.665 3.717-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.61c.498-.303.953-.14.579.192l-8.533 7.701h-.002l.002.001-.314 4.692c.46 0 .663-.201.922-.45l2.22-2.15 4.59 3.397c.848.467 1.457.227 1.668-.785l3.015-14.228c.309-1.239-.474-1.8-1.282-1.43z"></path></svg>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Hub Section -->
+    <main class="relative min-h-screen w-full flex items-center justify-center p-4 bonk-bg-gradient overflow-hidden">
+        <canvas id="particle-canvas"></canvas>
+        <div class="content-on-top w-full max-w-lg text-center">
+            <div class="glass-card rounded-2xl p-8 md:p-12 shadow-2xl">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-white leading-tight">The <span class="bonk-gradient-text">BONK</span> Arena</h1>
+                <p class="mt-4 text-gray-300 max-w-md mx-auto">Risk your $BONK in a winner-take-all battle. Consume rivals, grow your mass, and claim the pot.</p>
+                <div class="mt-8 bg-black/20 p-4 rounded-lg">
+                    <p class="text-sm text-gray-400">Current Prize Pool</p>
+                    <p id="prize-pool" class="text-3xl font-bold text-white tracking-wider">0 <span class="text-xl text-[#f9a825]">$BONK</span></p>
+                </div>
+                <div class="mt-8">
+                    <a href="#" class="bonk-button-primary w-full px-8 py-4 rounded-xl text-xl block">Connect Wallet to Play</a>
+                </div>
+                <p class="mt-6 text-xs text-gray-500 animate-pulse">Game is in Beta. Please play responsibly.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-20 md:py-24 px-4">
+        <div class="container mx-auto max-w-4xl">
+            <div class="text-center mb-16 animate-on-scroll">
+                <h2 class="text-3xl md:text-4xl font-bold text-white">A Simple Game of Guts</h2>
+                <p class="mt-2 text-gray-400">Bigger bid, bigger ball. Last one standing wins.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-10 text-center">
+                <div class="animate-on-scroll how-it-works-step p-4 rounded-lg">
+                    <div class="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-orange-500/20 text-orange-400 text-2xl font-bold">1</div>
+                    <h3 class="text-xl font-semibold text-white mb-2">Bid with $BONK</h3>
+                    <p class="text-gray-400">Your bid size determines your starting mass. Go big or go home.</p>
+                </div>
+                <div class="animate-on-scroll how-it-works-step p-4 rounded-lg" style="transition-delay: 150ms;">
+                    <div class="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-orange-500/20 text-orange-400 text-2xl font-bold">2</div>
+                    <h3 class="text-xl font-semibold text-white mb-2">Consume & Grow</h3>
+                    <p class="text-gray-400">Hunt down smaller players to absorb their $BONK and increase your size.</p>
+                </div>
+                <div class="animate-on-scroll how-it-works-step p-4 rounded-lg" style="transition-delay: 300ms;">
+                    <div class="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-orange-500/20 text-orange-400 text-2xl font-bold">3</div>
+                    <h3 class="text-xl font-semibold text-white mb-2">Claim Your Winnings</h3>
+                    <p class="text-gray-400">Exit the game to have your winnings automatically sent to your wallet. Instantly.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- NEW Roadmap Section -->
+    <section id="roadmap" class="py-20 md:py-24 px-4 bg-black/20">
+        <div class="container mx-auto max-w-3xl">
+            <div class="text-center mb-16 animate-on-scroll">
+                <h2 class="text-3xl md:text-4xl font-bold text-white">The Journey Ahead</h2>
+                <p class="mt-2 text-gray-400">We're building for the long term. Follow our progress.</p>
+            </div>
+            <div class="relative">
+                <div class="roadmap-line"></div>
+                <div id="roadmap-progress-line" class="roadmap-progress"></div>
+                <div class="space-y-16">
+                    <!-- Roadmap Item 1 -->
+                    <div class="roadmap-item md:flex items-center">
+                        <div class="md:w-1/2 md:pr-8 md:text-right">
+                            <span class="text-xs font-bold text-green-400 bg-green-500/20 px-2 py-1 rounded-full">COMPLETE</span>
+                            <h3 class="mt-2 text-2xl font-bold text-white">Phase 1: Game Launch</h3>
+                            <p class="mt-2 text-gray-400">Establish the core game and the deflationary BONK burn mechanism.</p>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-gray-700 mx-auto my-4 md:my-0 md:mx-0 flex-shrink-0 roadmap-item-dot"></div>
+                        <div class="md:w-1/2"></div>
+                    </div>
+                    <!-- Roadmap Item 2 -->
+                    <div class="roadmap-item md:flex items-center">
+                        <div class="md:w-1/2 md:order-3 md:pl-8 md:text-left">
+                           <span class="text-xs font-bold text-yellow-400 bg-yellow-500/20 px-2 py-1 rounded-full">IN PROGRESS</span>
+                            <h3 class="mt-2 text-2xl font-bold text-white">Phase 2: Tournaments</h3>
+                            <p class="mt-2 text-gray-400">Introduce competitive tournaments and private game rooms for communities.</p>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-gray-700 mx-auto my-4 md:my-0 md:mx-0 flex-shrink-0 roadmap-item-dot md:order-2"></div>
+                        <div class="md:w-1/2 md:order-1"></div>
+                    </div>
+                     <!-- Roadmap Item 3 -->
+                    <div class="roadmap-item md:flex items-center">
+                        <div class="md:w-1/2 md:pr-8 md:text-right">
+                            <span class="text-xs font-bold text-gray-400 bg-gray-500/20 px-2 py-1 rounded-full">PLANNED</span>
+                            <h3 class="mt-2 text-2xl font-bold text-white">Phase 3: Customization</h3>
+                            <p class="mt-2 text-gray-400">Launch player profiles and exclusive in-game skins for top NFT communities.</p>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-gray-700 mx-auto my-4 md:my-0 md:mx-0 flex-shrink-0 roadmap-item-dot"></div>
+                        <div class="md:w-1/2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="py-20 md:py-24 px-4">
+        <div class="container mx-auto max-w-3xl">
+            <div class="text-center mb-16 animate-on-scroll">
+                <h2 class="text-3xl md:text-4xl font-bold text-white">Frequently Asked Questions</h2>
+            </div>
+            <div class="space-y-4 animate-on-scroll">
+                <div class="faq-item glass-card rounded-lg">
+                    <details>
+                        <summary class="p-5 flex justify-between items-center"><span class="font-semibold text-lg text-white">What is Balls.fun?</span><span class="faq-arrow text-[#f9a825] transform transition-transform duration-300">&#10148;</span></summary>
+                        <div class="px-5 pb-5 text-gray-300 border-t border-white/10 pt-4">Balls.fun is a high-stakes, real-time multiplayer game on the Solana blockchain. Players bid with $BONK to control a "ball," and the goal is to consume smaller players to grow bigger and claim their BONK.</div>
+                    </details>
+                </div>
+                <div class="faq-item glass-card rounded-lg">
+                    <details>
+                        <summary class="p-5 flex justify-between items-center"><span class="font-semibold text-lg text-white">How does the BONK burn work?</span><span class="faq-arrow text-[#f9a825] transform transition-transform duration-300">&#10148;</span></summary>
+                        <div class="px-5 pb-5 text-gray-300 border-t border-white/10 pt-4">A total of 10% is deducted from every bid. 5% of this is permanently burned (removed from circulation), which helps make $BONK more scarce. The other 5% is sent to a marketing wallet to fund community growth and partnerships.</div>
+                    </details>
+                </div>
+                <div class="faq-item glass-card rounded-lg">
+                    <details>
+                        <summary class="p-5 flex justify-between items-center"><span class="font-semibold text-lg text-white">Is the game fair?</span><span class="faq-arrow text-[#f9a825] transform transition-transform duration-300">&#10148;</span></summary>
+                        <div class="px-5 pb-5 text-gray-300 border-t border-white/10 pt-4">Yes. The game logic is handled by on-chain smart contracts on Solana. Your starting size is directly proportional to your bid, and all interactions are governed by the rules of the contract.</div>
+                    </details>
+                </div>
+                <div class="faq-item glass-card rounded-lg">
+                    <details>
+                        <summary class="p-5 flex justify-between items-center"><span class="font-semibold text-lg text-white">What happens if I get consumed?</span><span class="faq-arrow text-[#f9a825] transform transition-transform duration-300">&#10148;</span></summary>
+                        <div class="px-5 pb-5 text-gray-300 border-t border-white/10 pt-4">If your ball is consumed by a larger player, you lose the $BONK you bid with for that round. The winner who consumed you claims a portion of it. It's a high-risk, high-reward game.</div>
+                    </details>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-8 px-4 text-center text-gray-500 border-t border-white/10">
+        <p>&copy; 2025 Balls.fun - For the community, by the BONK.</p>
+    </footer>
+
+    <script>
+        // --- SCROLL ANIMATION SCRIPT ---
+        const scrollElements = document.querySelectorAll(".animate-on-scroll");
+        const elementInView = (el, dividend = 1) => {
+            const elementTop = el.getBoundingClientRect().top;
+            return ( elementTop <= (window.innerHeight || document.documentElement.clientHeight) / dividend );
+        };
+        const displayScrollElement = (element) => element.classList.add("is-visible");
+        const handleScrollAnimation = () => {
+            scrollElements.forEach((el) => {
+                if (elementInView(el, 1.25)) displayScrollElement(el);
+            });
+        };
+        window.addEventListener("scroll", handleScrollAnimation);
+        handleScrollAnimation();
+
+        // --- PRIZE POOL COUNTER SCRIPT ---
+        const prizePoolElement = document.getElementById('prize-pool');
+        const targetPrize = 1234567890;
+        const animationDuration = 2000;
+        const animateCountUp = (el, target) => {
+            let startTime = null;
+            const step = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min((timestamp - startTime) / animationDuration, 1);
+                const currentNumber = Math.floor(progress * target);
+                el.innerHTML = `${currentNumber.toLocaleString('en-US')} <span class="text-xl text-[#f9a825]">$BONK</span>`;
+                if (progress < 1) window.requestAnimationFrame(step);
+                else el.innerHTML = `${target.toLocaleString('en-US')} <span class="text-xl text-[#f9a825]">$BONK</span>`;
+            };
+            window.requestAnimationFrame(step);
+        };
+        animateCountUp(prizePoolElement, targetPrize);
+
+        // --- PARTICLE BACKGROUND SCRIPT ---
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        let particlesArray;
+        class Particle {
+            constructor(x, y, size, color, speedX, speedY) { this.x = x; this.y = y; this.size = size; this.color = color; this.speedX = speedX; this.speedY = speedY; }
+            draw() { ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false); ctx.fillStyle = this.color; ctx.fill(); }
+            update() {
+                if (this.x > canvas.width || this.x < 0) this.speedX = -this.speedX;
+                if (this.y < -this.size) this.y = canvas.height + this.size;
+                this.x += this.speedX; this.y += this.speedY; this.draw();
+            }
+        }
+        function initParticles() {
+            particlesArray = [];
+            const numberOfParticles = (canvas.height * canvas.width) / 9000;
+            const colors = ['rgba(249, 168, 37, 0.4)', 'rgba(255, 87, 34, 0.4)', 'rgba(255, 255, 255, 0.2)'];
+            for (let i = 0; i < numberOfParticles; i++) {
+                const size = Math.random() * 5 + 1;
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const speedX = Math.random() * 0.4 - 0.2;
+                const speedY = Math.random() * -1.5 - 0.5;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                particlesArray.push(new Particle(x, y, size, color, speedX, speedY));
+            }
+        }
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < particlesArray.length; i++) particlesArray[i].update();
+            requestAnimationFrame(animateParticles);
+        }
+        initParticles();
+        animateParticles();
+        window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; initParticles(); });
+
+        // --- FAQ ACCORDION SCRIPT ---
+        const faqItems = document.querySelectorAll('.faq-item details');
+        faqItems.forEach((item) => {
+            item.addEventListener('toggle', () => {
+                if (item.open) faqItems.forEach((other) => { if (other !== item) other.removeAttribute('open'); });
+            });
+        });
+
+        // --- NEW ROADMAP SCROLL SCRIPT ---
+        const roadmapItems = document.querySelectorAll('.roadmap-item');
+        const progressLine = document.getElementById('roadmap-progress-line');
+        const roadmapSection = document.getElementById('roadmap');
+
+        const handleRoadmapScroll = () => {
+            const sectionTop = roadmapSection.getBoundingClientRect().top;
+            const sectionHeight = roadmapSection.getBoundingClientRect().height;
+            const windowHeight = window.innerHeight;
+
+            // Calculate how much of the section is visible
+            const scrollPercent = Math.max(0, Math.min(1, (windowHeight - sectionTop) / (windowHeight + sectionHeight)));
+            
+            if (progressLine) {
+                 progressLine.style.height = `${scrollPercent * 100}%`;
+            }
+
+            roadmapItems.forEach((item, index) => {
+                const itemTop = item.getBoundingClientRect().top;
+                // Activate item when it's near the middle of the screen
+                if (itemTop < windowHeight * 0.6) {
+                    item.classList.add('is-active');
+                } else {
+                    item.classList.remove('is-active');
+                }
+            });
+        };
+        window.addEventListener('scroll', handleRoadmapScroll);
+        handleRoadmapScroll(); // Initial check
+
+    </script>
+</body>
+</html>
